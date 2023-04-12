@@ -11,17 +11,18 @@ import requests
 import urllib3
 
 __author__  = 'Andreas Teubner'
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 __license__ = 'MIT'
 
 def parse_args():
     parser = ArgumentParser(description='A Python script to do a curl check in Icinga2.')
 
     parser.add_argument("--content", help="The content expected in the response", default=None)
-    parser.add_argument("--data", help="HTTP POST data", default=None)
+    parser.add_argument("--data", help="HTTP GET/POST data", default=None)
     parser.add_argument("--domain", help="The Domain to connect with", default=None)
     parser.add_argument("--header", help="Pass custom header(s) to server")
     parser.add_argument("--interface", help="Use network INTERFACE (or address)")
+    parser.add_argument("--request_type", help="Is this a GET or a POST request?")
     parser.add_argument("--uri", help="The URI to append to Domain")
     parser.add_argument("--version", action="version", version=__version__, help="Show version number")
 
@@ -61,6 +62,7 @@ def main(args):
     domain = ""
     header = {'Connection':'close'}
     interface = ""
+    request_type = "POST"
     status_code = 0
     status_text = ""
     uri = ""
@@ -91,6 +93,9 @@ def main(args):
     if args.interface != None:
         interface = args.interface
 
+    if args.request_type != None:
+        request_type = args.request_type
+
     if args.uri != None:
         uri = args.uri
 
@@ -101,7 +106,10 @@ def main(args):
     urllib3.util.connection.create_connection = set_source_address(interface, curl_connection)
 
     try:
-        response = curl_session.post(domain+uri, headers=header, data=data, timeout=5, verify=False)
+        if request_type == "GET":
+            response = curl_session.get(domain+uri, headers=header, data=data, timeout=5, verify=False)
+        else:
+            response = curl_session.post(domain+uri, headers=header, data=data, timeout=5, verify=False)
         response.raise_for_status()
         status_code = response.status_code
         status_text = response.text
